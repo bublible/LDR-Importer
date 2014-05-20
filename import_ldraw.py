@@ -818,54 +818,47 @@ Must be a .ldr or .dat''')
                             # Set smooth shading
                             bpy.ops.object.shade_smooth()
 
-                # Add 30 degree edge split modifier to all bricks
-                for cur_obj in objects:
-                    edges = cur_obj.modifiers.new(
-                        "Edge Split", type='EDGE_SPLIT')
-                    edges.split_angle = 0.523599
-
-            # The Gaps import option was selected
-            if GapsOpt:  # noqa
-                debugPrint("Gaps option selected")
-
-                # Select all the mesh
-                for cur_obj in objects:
-                    cur_obj.select = True
-                    bpy.context.scene.objects.active = cur_obj
-
-                    if bpy.ops.object.mode_set.poll():
-                        # Change to edit mode
-                        bpy.ops.object.mode_set(mode='EDIT')
-                        bpy.ops.mesh.select_all(action='SELECT')
-
-                        # Add small gaps between each brick
-                        bpy.ops.transform.resize(value=(0.99, 0.99, 0.99))
-                        if bpy.ops.object.mode_set.poll():
-
-                            # Go back to object mode
-                            bpy.ops.object.mode_set(mode='OBJECT')
-
-            # The Bevel import option was selected
-            if BevelOpt:  # noqa
-                debugPrint("Bevel option selected")
-
-                # Select all the mesh
-                for cur_obj in objects:
-                    cur_obj.select = True
-                    bpy.context.scene.objects.active = cur_obj
-
-                    if bpy.ops.object.mode_set.poll():
-                        # Go back to object mode, set origin to geometry
-                        bpy.ops.object.mode_set(mode='OBJECT')
-
-                        # Add small bevel to each brick
-                        for cur_obj in objects:
-                            bevel = cur_obj.modifiers.new("Bevel", type='BEVEL')
-                            bpy.ops.object.modifier_move_up(modifier="Bevel")
-                            bevel.width = 0.01
-                            bevel.limit_method = 'ANGLE'
-                            bevel.angle_limit = 0.523599
-
+                # micro scaling value
+                _rs = 0.997
+            		
+            		### 32x32, 32x48, 40x24, 48x48, 50x50
+            		_baseplates = ["385", "425", "425p01", "425p02", "606", "606p01", "606p02", "606p33", "607", "607p01", "608p01", "608p02", "608p03", "608p04", "608p33", "609", "609p01", "610", "610p01", "611", "611p01", "612", "612p01", "2360", "2360p01", "613", "613p01", "782", "809", "3811", "3811p02", "3811p03", "3811p04", "3811p05", "3947", "4186", "4186p01", "4478", "4478p01", "4478p02", "4478p03", "4478p04", "51542", "6261", "30271", "30030p01", "6099", "6099p01", "6099p02", "6099p03", "6099p04", "6099p05", "6099p06", "6100", "6100p01", "6100p02", "6100p03", "6100p04", "6100p05", "30225b", "30225bp1", "80256", "80671", "30030", "2552", "6092", "44343", "44343p01", "44343p02", "44342", "44342p01", "44336", "44336p01", "44336p02", "44336p03", "44341", "44341p01", "2361", "2361p01", "2361p02", "2361p03", "2359", "2359p01", "2359p02", "2359p03", "309", "309p01", "309p02", "309p03", "309p04", "2358", "2358p01", "2358p02", "2358p03", "2358p04", "80547", "6024", "30473"]
+            		
+            		### a few bricks that introduced strange mesh distortions we need to prohibit from beveling
+            		### * this list may expand in the future as new ones may show up overtime!!!
+            		_noBevel = ["3959", "3940", "3483"]
+                
+                # Add bevel and 30 degree edge split modifier to all bricks
+                for obj in objects:
+                    
+            			### if actual object is not prohibited from "seams"
+            			if (obj.name.split(".")[0] not in _noBevel) and (obj.name.split(".")[0] not in _baseplates):
+            				
+            				### set new modifier: BEVEL and apply it
+            				seams = obj.modifiers.new('sms', type='BEVEL')
+            				seams.width = 0.02
+            				seams.segments = 2
+            				seams.profile = 0.1
+            				seams.use_only_vertices = False
+            				seams.use_clamp_overlap = False
+            				seams.limit_method = "ANGLE"
+            				# this angle of 86° was the lowest value that did not affects lego-on-stud
+            				seams.angle_limit = 1.500984
+            				seams.offset_type = "WIDTH"
+            				bpy.ops.object.modifier_apply(modifier='sms')
+            				
+            				### set new modifier: EDGE_SPLIT and apply it
+            				edges = obj.modifiers.new('dgs', type='EDGE_SPLIT')
+            				edges.use_edge_angle = True
+            				edges.use_edge_sharp = True
+            				edges.split_angle = 0.523599
+            				bpy.ops.object.modifier_apply(modifier='dgs')
+            			
+            			### scales down object down just a tiny micro bit for all objects
+            			### so also those that were prohibited from modifiers get some kind of "seam"
+            			obj.scale = [_rs, _rs, _rs]
+                  
+            
             # Select all the mesh now that import is complete
             for cur_obj in objects:
                 cur_obj.select = True
